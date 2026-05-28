@@ -37,6 +37,7 @@ export interface ResearchAsset {
   name: string;
   sector: string;
   color: string;
+  logoUrl?: string | null;
   assetClass: ResearchAssetClass;
   price: string;
   change: string;

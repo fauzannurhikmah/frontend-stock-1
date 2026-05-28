@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AssetTab, ResearchAssetClass, ResearchHorizon } from "@/lib/types";
+import {
+  AssetTab,
+  ResearchAsset,
+  ResearchAssetClass,
+  ResearchHorizon,
+} from "@/lib/types";
 import { researchAssets } from "@/data/researchData";
 import { DashboardHeader } from "@/components/research/DashboardHeader";
 import { AssetClassTabs } from "@/components/research/AssetClassTabs";
@@ -10,12 +15,12 @@ import { SectorFilter } from "@/components/research/SectorFilter";
 import { HorizonTabs } from "@/components/research/Horizontabs";
 import { StockTable } from "@/components/research/StockTable";
 import { getSectorOptions } from "@/lib/sectors-api";
+import { fetchStocks, mapStockItemToResearchAsset } from "@/lib/stocks-api";
 import {
   GLOBAL_FILTER_OPTIONS,
   US_SECTOR_OPTIONS,
   getGlobalRegionGroup,
   getGlobalSectorGroup,
-  getSectorGroup,
   getUSSectorGroup,
 } from "@/lib/research-utils";
 
@@ -34,6 +39,7 @@ const horizonLabel: Record<ResearchHorizon, string> = {
 };
 
 const DEFAULT_STOCK_OPTIONS = [{ key: "all", label: "Semua sektor" }];
+const STOCK_PAGE_SIZE = 20;
 
 function normalizeFilterKey(value: string) {
   return value.trim().toLowerCase();
@@ -64,39 +70,26 @@ export default function ResearchPage() {
   const [stockSectorOptions, setStockSectorOptions] = useState(
     DEFAULT_STOCK_OPTIONS,
   );
+  const [stockRows, setStockRows] = useState<ResearchAsset[]>([]);
+  const [stockPage, setStockPage] = useState(1);
+  const [stockHasNextPage, setStockHasNextPage] = useState(false);
+  const [stockTotalItems, setStockTotalItems] = useState<number | null>(null);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockError, setStockError] = useState<string | null>(null);
 
   const assetClass = assetClassMap[assetTab];
+  const stockSectorLabel = useMemo(() => {
+    if (stockSector === "all") return null;
+    return (
+      stockSectorOptions.find((option) => option.key === stockSector)?.label ??
+      null
+    );
+  }, [stockSector, stockSectorOptions]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    getSectorOptions()
-      .then((remoteOptions) => {
-        if (!isMounted) return;
-        setStockSectorOptions(mergeStockSectorOptions(remoteOptions));
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setStockSectorOptions(DEFAULT_STOCK_OPTIONS);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const filteredAssets = useMemo(() => {
+  const localFilteredAssets = useMemo(() => {
     let assets = researchAssets.filter(
       (asset) => asset.assetClass === assetClass,
     );
-
-    if (assetClass === "stocks" && stockSector !== "all") {
-      assets = assets.filter(
-        (asset) =>
-          getSectorGroup(asset) === stockSector ||
-          normalizeFilterKey(asset.sector) === stockSector,
-      );
-    }
 
     if (assetClass === "us" && usSector !== "all") {
       assets = assets.filter((asset) => getUSSectorGroup(asset) === usSector);
@@ -116,13 +109,106 @@ export default function ResearchPage() {
     }
 
     return assets;
-  }, [assetClass, globalFilter, stockSector, usSector]);
+  }, [assetClass, globalFilter, usSector]);
 
-  const sortedRows = useMemo(
+  useEffect(() => {
+    let isMounted = true;
+
+    getSectorOptions()
+      .then((remoteOptions) => {
+        if (!isMounted) return;
+        setStockSectorOptions(mergeStockSectorOptions(remoteOptions));
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setStockSectorOptions(DEFAULT_STOCK_OPTIONS);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (assetClass !== "stocks") {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setStockLoading(true);
+    setStockError(null);
+
+    fetchStocks({
+      page: stockPage,
+      pageSize: STOCK_PAGE_SIZE,
+      sector: stockSectorLabel,
+      signal: controller.signal,
+    })
+      .then(({ items, hasNextPage, totalItems }) => {
+        if (controller.signal.aborted) return;
+
+        const mappedRows = items
+          .map(mapStockItemToResearchAsset)
+          .filter((item): item is ResearchAsset => item !== null);
+
+        setStockRows(mappedRows);
+        setStockHasNextPage(hasNextPage);
+        setStockTotalItems(totalItems);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+
+        setStockRows([]);
+        setStockHasNextPage(false);
+        setStockTotalItems(null);
+        setStockError(
+          error instanceof Error ? error.message : "Gagal memuat data emiten",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setStockLoading(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [assetClass, stockPage, stockSectorLabel]);
+
+  useEffect(() => {
+    if (assetClass === "stocks") {
+      setStockPage(1);
+    }
+  }, [assetClass]);
+
+  const handleAssetTabChange = (next: AssetTab) => {
+    setAssetTab(next);
+    if (next === "indonesia") {
+      setStockPage(1);
+    }
+  };
+
+  const handleStockSectorChange = (next: string) => {
+    setStockSector(next);
+    setStockPage(1);
+  };
+
+  const sortedLocalRows = useMemo(
     () =>
-      [...filteredAssets].sort((a, b) => b[horizon].score - a[horizon].score),
-    [filteredAssets, horizon],
+      [...localFilteredAssets].sort((a, b) => b[horizon].score - a[horizon].score),
+    [horizon, localFilteredAssets],
   );
+
+  const sortedStockRows = useMemo(
+    () =>
+      [...stockRows].sort((a, b) => b[horizon].score - a[horizon].score),
+    [horizon, stockRows],
+  );
+
+  const visibleAssets =
+    assetClass === "stocks" ? sortedStockRows : sortedLocalRows;
 
   const tableLabel = useMemo(() => {
     if (assetClass === "stocks") {
@@ -141,48 +227,73 @@ export default function ResearchPage() {
   }, [assetClass, horizon]);
 
   return (
-    <main className="container-shell py-7 animate-fadeUp">
-      <DashboardHeader />
+    <main className= "container-shell py-7 animate-fadeUp" >
+    <DashboardHeader />
 
-      <AssetClassTabs value={assetTab} onChange={setAssetTab} />
+    < AssetClassTabs value = { assetTab } onChange = { handleAssetTabChange } />
 
-      <SummaryCards assets={filteredAssets} />
+      <SummaryCards assets={ visibleAssets } />
 
-      {assetClass === "stocks" && (
-        <SectorFilter
+  {
+    assetClass === "stocks" && (
+      <SectorFilter
           label="Filter sektor"
-          value={stockSector}
-          options={stockSectorOptions}
-          onChange={setStockSector}
-        />
-      )}
+    value = { stockSector }
+    options = { stockSectorOptions }
+    onChange = { handleStockSectorChange }
+      />
+      )
+  }
 
-      {assetClass === "us" && (
-        <SectorFilter
+  {
+    assetClass === "us" && (
+      <SectorFilter
           label="Filter sektor"
-          value={usSector}
-          options={US_SECTOR_OPTIONS}
-          onChange={setUsSector}
-        />
-      )}
+    value = { usSector }
+    options = { US_SECTOR_OPTIONS }
+    onChange = { setUsSector }
+      />
+      )
+  }
 
-      {assetClass === "global" && (
-        <SectorFilter
+  {
+    assetClass === "global" && (
+      <SectorFilter
           label="Filter sektor / region"
-          value={globalFilter}
-          options={GLOBAL_FILTER_OPTIONS}
-          onChange={setGlobalFilter}
-        />
-      )}
+    value = { globalFilter }
+    options = { GLOBAL_FILTER_OPTIONS }
+    onChange = { setGlobalFilter }
+      />
+      )
+  }
 
-      <HorizonTabs value={horizon} onChange={setHorizon} />
+  <HorizonTabs value={ horizon } onChange = { setHorizon } />
 
-      <p className="mb-3 flex items-center gap-2 text-[9.5px] font-medium uppercase tracking-[.1em] text-grove-muted">
-        {tableLabel}
-        <span className="flex-1 border-t border-grove-border" />
-      </p>
+    <p className="mb-3 flex items-center gap-2 text-[9.5px] font-medium uppercase tracking-[.1em] text-grove-muted" >
+      { tableLabel }
+      < span className = "flex-1 border-t border-grove-border" />
+        </p>
 
-      <StockTable rows={sortedRows} assetClass={assetClass} horizon={horizon} />
-    </main>
+        < StockTable
+  rows = { visibleAssets }
+  assetClass = { assetClass }
+  horizon = { horizon }
+  loading = { assetClass === "stocks" && stockLoading
+}
+error = { assetClass === "stocks" ? stockError : null}
+pagination = {
+  assetClass === "stocks"
+  ? {
+    page: stockPage,
+    pageSize: STOCK_PAGE_SIZE,
+    hasNextPage: stockHasNextPage,
+    totalItems: stockTotalItems,
+    onPageChange: setStockPage,
+  }
+  : undefined
+        }
+rowOffset = { assetClass === "stocks" ? (stockPage - 1) * STOCK_PAGE_SIZE : 0}
+      />
+  </main>
   );
 }
