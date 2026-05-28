@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AssetTab, ResearchAssetClass, ResearchHorizon } from "@/lib/types";
 import { researchAssets } from "@/data/researchData";
 import { DashboardHeader } from "@/components/research/DashboardHeader";
@@ -9,9 +9,9 @@ import { SummaryCards } from "@/components/research/SummaryCards";
 import { SectorFilter } from "@/components/research/SectorFilter";
 import { HorizonTabs } from "@/components/research/Horizontabs";
 import { StockTable } from "@/components/research/StockTable";
+import { getSectorOptions } from "@/lib/sectors-api";
 import {
   GLOBAL_FILTER_OPTIONS,
-  STOCK_SECTOR_OPTIONS,
   US_SECTOR_OPTIONS,
   getGlobalRegionGroup,
   getGlobalSectorGroup,
@@ -33,14 +33,57 @@ const horizonLabel: Record<ResearchHorizon, string> = {
   st: "Short Term",
 };
 
+const DEFAULT_STOCK_OPTIONS = [{ key: "all", label: "Semua sektor" }];
+
+function normalizeFilterKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function mergeStockSectorOptions(
+  remoteOptions: Array<{ key: string; label: string }>,
+) {
+  const merged = [{ key: "all", label: "Semua sektor" }];
+
+  const uniqueKeys = new Set<string>(["all"]);
+  for (const opt of remoteOptions) {
+    const normalizedKey = normalizeFilterKey(opt.label);
+    if (!normalizedKey || uniqueKeys.has(normalizedKey)) continue;
+    uniqueKeys.add(normalizedKey);
+    merged.push({ key: normalizedKey, label: opt.label });
+  }
+
+  return merged;
+}
+
 export default function ResearchPage() {
   const [assetTab, setAssetTab] = useState<AssetTab>("indonesia");
   const [horizon, setHorizon] = useState<ResearchHorizon>("lt");
   const [stockSector, setStockSector] = useState("all");
   const [usSector, setUsSector] = useState("all");
   const [globalFilter, setGlobalFilter] = useState("all");
+  const [stockSectorOptions, setStockSectorOptions] = useState(
+    DEFAULT_STOCK_OPTIONS,
+  );
 
   const assetClass = assetClassMap[assetTab];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getSectorOptions()
+      .then((remoteOptions) => {
+        if (!isMounted) return;
+        setStockSectorOptions(mergeStockSectorOptions(remoteOptions));
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setStockSectorOptions(DEFAULT_STOCK_OPTIONS);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredAssets = useMemo(() => {
     let assets = researchAssets.filter(
@@ -48,13 +91,11 @@ export default function ResearchPage() {
     );
 
     if (assetClass === "stocks" && stockSector !== "all") {
-      if (stockSector === "smallcap") {
-        assets = assets.filter((asset) => asset.isSmallCap === true);
-      } else {
-        assets = assets.filter(
-          (asset) => getSectorGroup(asset) === stockSector,
-        );
-      }
+      assets = assets.filter(
+        (asset) =>
+          getSectorGroup(asset) === stockSector ||
+          normalizeFilterKey(asset.sector) === stockSector,
+      );
     }
 
     if (assetClass === "us" && usSector !== "all") {
@@ -111,7 +152,7 @@ export default function ResearchPage() {
         <SectorFilter
           label="Filter sektor"
           value={stockSector}
-          options={STOCK_SECTOR_OPTIONS}
+          options={stockSectorOptions}
           onChange={setStockSector}
         />
       )}
