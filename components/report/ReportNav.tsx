@@ -1,10 +1,38 @@
-import { Tab } from "@/components/ui/Tab";
+type ReportTab = {
+  id: string;
+  label: string;
+  accent?: boolean;
+};
 
-export function ReportNav({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-  const tabs = ["overview", "income", "segments", "analysis", "bandar", "narasi", "verdict"];
+export function ReportNav({
+  value,
+  onChange,
+  tabs,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  tabs: ReportTab[];
+}) {
   return (
-    <div className="mb-5 flex gap-1 overflow-x-auto rounded-grove border border-grove-border bg-grove-bg2 p-1">
-      {tabs.map((tab) => <Tab key={tab} active={value === tab} onClick={() => onChange(tab)}>{tab}</Tab>)}
+    <div className="rpt-nav">
+      {tabs.map((tab) => {
+        const isActive = value === tab.id;
+        return (
+          <button
+            key={tab.id}
+            className={`rpt-ntab ${isActive ? "active" : ""}`}
+            onClick={() => onChange(tab.id)}
+            style={
+              tab.accent && !isActive
+                ? { color: "var(--grove)", fontWeight: 500 }
+                : undefined
+            }
+            type="button"
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

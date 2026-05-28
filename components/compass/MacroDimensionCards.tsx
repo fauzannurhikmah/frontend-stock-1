@@ -71,7 +71,7 @@ const macroDimensions: DimItem[] = [
 
 function scoreColor(s: number) {
   if (s >= 75) return "text-[#4ecb8d]";
-  if (s >= 65) return "text-[#e8a84c]";
+  if (s >= 60) return "text-[#e8a84c]";
   return "text-[#e05c5c]";
 }
 

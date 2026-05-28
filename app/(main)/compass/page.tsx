@@ -255,7 +255,7 @@ export default function CompassPage() {
         </p>
       </div>
       <h2 className="mb-5 font-serif text-[22px] font-normal tracking-[-0.01em]">
-        Cuaca Makro — <em className="italic text-[#4ecb8d]">Apr 2026</em>
+        Cuaca Makro — <em className="italic">Apr 2026</em>
       </h2>
 
       <MacroScoreCard />

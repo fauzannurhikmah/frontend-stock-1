@@ -183,11 +183,11 @@ export function StockTable({
             return (
               <tr
                 key={`${row.ticker}-${horizon}`}
-                className={`border-b border-grove-border transition-colors hover:bg-grove-bg3 ${isStockClass ? "cursor-pointer" : ""}`}
+                className={`border-b border-grove-border transition-colors hover:bg-grove-bg3 cursor-pointer`}
                 onClick={() => {
-                  if (isStockClass) {
-                    router.push(`/report/${row.ticker.toLowerCase()}`);
-                  }
+                  router.push(
+                    `/report/${encodeURIComponent(row.ticker.toLowerCase())}`,
+                  );
                 }}
               >
                 <td className="px-4 py-2 text-[11px] text-grove-muted">
@@ -205,19 +205,13 @@ export function StockTable({
                       {tickerBadge}
                     </div>
                     <div>
-                      {isStockClass ? (
-                        <Link
-                          href={`/report/${row.ticker.toLowerCase()}`}
-                          className="block text-[12.5px] font-medium text-grove-text hover:text-grove-primary"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          {row.ticker}
-                        </Link>
-                      ) : (
-                        <div className="text-[12.5px] font-medium text-grove-text">
-                          {row.ticker}
-                        </div>
-                      )}
+                      <Link
+                        href={`/report/${encodeURIComponent(row.ticker.toLowerCase())}`}
+                        className="block text-[12.5px] font-medium text-grove-text hover:text-grove-primary"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {row.ticker}
+                      </Link>
                       <div className="text-[10px] text-grove-muted">
                         {row.name} · {row.sector}
                       </div>

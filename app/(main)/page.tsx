@@ -21,7 +21,7 @@ export default function HomePage() {
       <PricingTiers />
       <FAQAccordion />
       <CtaBanner />
-      {/* <FooterDisclaimer /> */}
+      <FooterDisclaimer />
     </main>
   );
 }
