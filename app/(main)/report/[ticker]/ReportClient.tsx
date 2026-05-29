@@ -11,7 +11,6 @@ import { AnalysisSection } from "@/components/report/AnalysisSection";
 import { BandarmologySection } from "@/components/report/BandarmologySection";
 import { NarasiSection } from "@/components/report/NarasiSection";
 import { TechnicalSection } from "@/components/report/TechnicalSection";
-import { researchAssets } from "@/data/researchData";
 import { ResearchAsset } from "@/lib/types";
 
 type ReportTab = {
@@ -34,12 +33,14 @@ const stanceLabels: Record<"ow" | "nt" | "uw", string> = {
   uw: "Underweight",
 };
 
-export function ReportClient({ ticker }: { ticker: string }) {
+export function ReportClient({
+  ticker,
+  asset,
+}: {
+  ticker: string;
+  asset: ResearchAsset | null;
+}) {
   const [tab, setTab] = useState("analysis");
-  const asset = useMemo(
-    () => researchAssets.find((item) => item.ticker === ticker.toUpperCase()),
-    [ticker],
-  );
 
   const tabs: ReportTab[] = useMemo(() => {
     const baseTabs = [

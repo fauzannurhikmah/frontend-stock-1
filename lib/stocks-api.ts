@@ -44,6 +44,38 @@ export interface StocksResponse {
     hasNextPage: boolean;
 }
 
+export interface StockDetailApiResponse extends StockListingApiItem {
+    exchange?: {
+        code?: string | null;
+        name?: string | null;
+        timezone?: string | null;
+        exchangeType?: string | null;
+    };
+    industry?: {
+        name?: string | null;
+    };
+    latestStockPrice?: {
+        date?: string | null;
+        open?: string | null;
+        high?: string | null;
+        low?: string | null;
+        close?: string | null;
+        adjClose?: string | null;
+        volume?: string | null;
+        value?: string | null;
+    };
+    priceComparison?: {
+        latestDate?: string | null;
+        latestClose?: string | null;
+        previousDate?: string | null;
+        previousClose?: string | null;
+        change?: string | null;
+        changePct?: string | null;
+        direction?: string | null;
+    };
+    marketCap?: string | null;
+}
+
 const numberFormatter = new Intl.NumberFormat("id-ID");
 
 function parseNumber(value: string | null | undefined) {
@@ -192,6 +224,16 @@ function buildFv(closePrice: number | null) {
     return formatCurrency(closePrice * 1.05);
 }
 
+function formatIdrValue(value: number | null) {
+    if (value === null) return "-";
+    return numberFormatter.format(Math.round(value));
+}
+
+function formatIdrRange(minValue: number | null, maxValue: number | null) {
+    if (minValue === null || maxValue === null) return "-";
+    return `${formatIdrValue(minValue)}-${formatIdrValue(maxValue)}`;
+}
+
 export function mapStockItemToResearchAsset(
     item: StockListingApiItem,
 ): ResearchAsset | null {
@@ -228,6 +270,54 @@ export function mapStockItemToResearchAsset(
         change,
         fv: buildFv(latestClose ?? closePrice ?? openPrice),
         intlSector: null,
+        region: item.country?.name?.trim() || null,
+        isSmallCap: marketCap !== null ? marketCap < 10_000_000_000_000 : undefined,
+        lt: buildHorizonData(ticker, "lt"),
+        mt: buildHorizonData(ticker, "mt"),
+        st: buildHorizonData(ticker, "st"),
+    };
+}
+
+export function mapStockDetailToResearchAsset(
+    item: StockDetailApiResponse,
+): ResearchAsset | null {
+    const ticker = item.listing?.symbol?.trim();
+    if (!ticker) return null;
+
+    const sectorName = item.sector?.name?.trim() || "Sektor tidak diketahui";
+    const companyName =
+        item.company?.displayName?.trim() ||
+        item.company?.legalName?.trim() ||
+        ticker;
+    const latestClose =
+        parseNumber(item.priceComparison?.latestClose) ??
+        parseNumber(item.latestStockPrice?.close);
+    const previousClose = parseNumber(item.priceComparison?.previousClose);
+    const marketCap = parseNumber(item.marketCap);
+    const color = getSectorColorKey(sectorName);
+    const change = formatComparisonChange(
+        item.priceComparison?.changePct,
+        item.priceComparison?.direction,
+        latestClose,
+        previousClose,
+    );
+
+    const fairValueBase = latestClose !== null ? latestClose * 1.08 : null;
+
+    return {
+        ticker,
+        name: companyName,
+        sector: sectorName,
+        color,
+        logoUrl: item.company?.logoUrl?.trim() || null,
+        assetClass: "stocks",
+        price: formatIdrValue(latestClose),
+        change,
+        fv:
+            fairValueBase === null
+                ? "-"
+                : formatIdrRange(fairValueBase * 0.95, fairValueBase * 1.05),
+        intlSector: item.industry?.name?.trim() || null,
         region: item.country?.name?.trim() || null,
         isSmallCap: marketCap !== null ? marketCap < 10_000_000_000_000 : undefined,
         lt: buildHorizonData(ticker, "lt"),
@@ -307,4 +397,29 @@ export async function fetchStocks({
             : items.length === pageSize;
 
     return { items, totalItems, hasNextPage };
+}
+
+export async function fetchStockDetail(
+    ticker: string,
+): Promise<StockDetailApiResponse | null> {
+    const normalizedTicker = ticker.trim().toLowerCase();
+    if (!normalizedTicker) return null;
+
+    const response = await fetch(
+        `${API_BASE_URL}/stocks/${encodeURIComponent(normalizedTicker)}`,
+        {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+        },
+    );
+
+    if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`Failed to fetch stock detail: HTTP ${response.status}`);
+    }
+
+    const payload = (await response.json()) as unknown;
+    if (typeof payload !== "object" || payload === null) return null;
+
+    return payload as StockDetailApiResponse;
 }
