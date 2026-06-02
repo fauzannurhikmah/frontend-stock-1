@@ -1,0 +1,13 @@
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+dependsOn = ["install"]
+cmds = ["pnpm run build"]
+cacheDirectories = [".next/cache", "node_modules/.cache"]
+
+[start]
+cmd = "pnpm start"
