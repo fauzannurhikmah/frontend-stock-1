@@ -78,7 +78,7 @@ type MetricTableRow = {
 type MetricViewData = {
   chart: MetricChartPoint[];
   table: MetricTableRow[];
-  ttm?: KeyStatisticsMetricResponse["quarterlyAndProjection"]["ttm"];
+  ttm?: NonNullable<KeyStatisticsMetricResponse["quarterlyAndProjection"]>["ttm"];
 };
 
 const LABELS = {
