@@ -3,16 +3,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ColorType,
+    CrosshairMode,
     createChart,
     CandlestickSeries,
+    LineSeries,
+    HistogramSeries,
     type CandlestickData,
     type IChartApi,
     type ISeriesApi,
     type UTCTimestamp,
 } from "lightweight-charts";
+import { Maximize2, X, BarChart2, ChevronDown, Check } from "lucide-react";
 import { API_BASE_URL } from "@/lib/env";
 import { COLOR_MAP } from "@/lib/research-utils";
 import { ResearchAsset } from "@/lib/types";
+
+type IndicatorKey = "ma50" | "ma200" | "volume";
+
+const INDICATOR_OPTIONS: { key: IndicatorKey; label: string; description: string }[] = [
+    { key: "ma50", label: "MA 50", description: "Moving Average 50 hari" },
+    { key: "ma200", label: "MA 200", description: "Moving Average 200 hari" },
+    { key: "volume", label: "Volume", description: "Volume bar di bawah chart" },
+];
 
 type CandlePoint = {
     time: number;
@@ -139,6 +151,25 @@ function mergeCandles(existing: CandlePoint[], older: CandlePoint[]) {
     return merged;
 }
 
+function computeMA(candles: CandlePoint[], period: number) {
+    return candles
+        .map((c, i) => {
+            if (i < period - 1) return null;
+            const slice = candles.slice(i - period + 1, i + 1);
+            const avg = slice.reduce((s, x) => s + x.close, 0) / period;
+            return { time: c.time as UTCTimestamp, value: avg };
+        })
+        .filter(Boolean) as { time: UTCTimestamp; value: number }[];
+}
+
+function toVolumeData(candles: CandlePoint[], upColor: string) {
+    return candles.map((c) => ({
+        time: c.time as UTCTimestamp,
+        value: c.volume,
+        color: c.close >= c.open ? upColor + "99" : "#e0484899",
+    }));
+}
+
 export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
     const accent = COLOR_MAP[asset.color] ?? "#5FB88A";
     const [candles, setCandles] = useState<CandlePoint[]>([]);
@@ -148,9 +179,20 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
     const [hasMore, setHasMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showIndicatorMenu, setShowIndicatorMenu] = useState(false);
+    const [activeIndicators, setActiveIndicators] = useState<Set<IndicatorKey>>(new Set());
+    const indicatorMenuRef = useRef<HTMLDivElement | null>(null);
+
     const chartContainerRef = useRef<HTMLDivElement | null>(null);
+    const modalChartContainerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<IChartApi | null>(null);
+    const modalChartRef = useRef<IChartApi | null>(null);
     const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const modalCandleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const ma50SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+    const ma200SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+    const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
     const candlesRef = useRef<CandlePoint[]>([]);
     const hasMoreRef = useRef(false);
     const loadingMoreRef = useRef(false);
@@ -259,6 +301,25 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
         };
     }, [asset.ticker]);
 
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (indicatorMenuRef.current && !indicatorMenuRef.current.contains(e.target as Node)) {
+                setShowIndicatorMenu(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const toggleIndicator = (key: IndicatorKey) => {
+        setActiveIndicators((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
+
     const loadOlderCandles = useCallback(async () => {
         if (loadingMoreRef.current || !hasMoreRef.current || !candlesRef.current.length) {
             return;
@@ -350,8 +411,9 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                 fixLeftEdge: true,
             },
             crosshair: {
-                vertLine: { color: "rgba(255, 255, 255, 0.24)", width: 1 },
-                horzLine: { color: "rgba(255, 255, 255, 0.24)", width: 1 },
+                mode: CrosshairMode.Normal,
+                vertLine: { color: "rgba(255, 255, 255, 0.24)", width: 1, style: 2, labelBackgroundColor: "#1e2d23" },
+                horzLine: { color: "rgba(255, 255, 255, 0.24)", width: 1, style: 2, labelBackgroundColor: "#1e2d23" },
             },
             localization: {
                 priceFormatter: formatChartPrice,
@@ -418,6 +480,73 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
         };
     }, [accent, loadOlderCandles, loading]);
 
+    // Modal chart effect
+    useEffect(() => {
+        if (!isModalOpen || !modalChartContainerRef.current || modalChartRef.current) {
+            return;
+        }
+
+        const chart = createChart(modalChartContainerRef.current, {
+            autoSize: true,
+            layout: {
+                background: { type: ColorType.Solid, color: "#12191a" },
+                textColor: "#94a89a",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 12,
+            },
+            grid: {
+                vertLines: { color: "rgba(255, 255, 255, 0.04)" },
+                horzLines: { color: "rgba(255, 255, 255, 0.04)" },
+            },
+            rightPriceScale: {
+                borderColor: "rgba(255, 255, 255, 0.08)",
+            },
+            timeScale: {
+                borderColor: "rgba(255, 255, 255, 0.08)",
+                timeVisible: true,
+                secondsVisible: false,
+                rightOffset: 8,
+                barSpacing: 8,
+                fixLeftEdge: true,
+            },
+            crosshair: {
+                mode: CrosshairMode.Normal,
+                vertLine: { color: "rgba(255, 255, 255, 0.24)", width: 1, style: 2, labelBackgroundColor: "#1e2d23" },
+                horzLine: { color: "rgba(255, 255, 255, 0.24)", width: 1, style: 2, labelBackgroundColor: "#1e2d23" },
+            },
+            localization: {
+                priceFormatter: formatChartPrice,
+            },
+        });
+
+        const candlestickSeries = chart.addSeries(CandlestickSeries, {
+            upColor: accent,
+            downColor: "#e04848",
+            borderUpColor: accent,
+            borderDownColor: "#e04848",
+            wickUpColor: accent,
+            wickDownColor: "#e04848",
+        });
+
+        if (candles.length > 0) {
+            candlestickSeries.setData(toChartCandles(candles));
+            const start = Math.max(0, candles.length - INITIAL_VISIBLE_POINTS);
+            chart.timeScale().setVisibleLogicalRange({
+                from: start,
+                to: candles.length + 8,
+            });
+        }
+
+        modalChartRef.current = chart;
+        modalCandleSeriesRef.current = candlestickSeries;
+
+        return () => {
+            chart.remove();
+            modalChartRef.current = null;
+            modalCandleSeriesRef.current = null;
+        };
+    }, [isModalOpen, accent, candles]);
+
     useEffect(() => {
         if (!chartRef.current || !candleSeriesRef.current || !candles.length) {
             return;
@@ -450,6 +579,74 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
             pendingShiftRef.current = 0;
         }
     }, [candles]);
+
+    // Add/remove indicator series when activeIndicators or candles change
+    useEffect(() => {
+        const chart = chartRef.current;
+        if (!chart || !candles.length) return;
+
+        // MA50
+        if (activeIndicators.has("ma50")) {
+            if (!ma50SeriesRef.current) {
+                const s = chart.addSeries(LineSeries, {
+                    color: "#f5c842",
+                    lineWidth: 1,
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                    crosshairMarkerVisible: false,
+                });
+                s.setData(computeMA(candles, 50));
+                ma50SeriesRef.current = s;
+            }
+        } else {
+            if (ma50SeriesRef.current) {
+                chart.removeSeries(ma50SeriesRef.current);
+                ma50SeriesRef.current = null;
+            }
+        }
+
+        // MA200
+        if (activeIndicators.has("ma200")) {
+            if (!ma200SeriesRef.current) {
+                const s = chart.addSeries(LineSeries, {
+                    color: "#e06de0",
+                    lineWidth: 1,
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                    crosshairMarkerVisible: false,
+                });
+                s.setData(computeMA(candles, 200));
+                ma200SeriesRef.current = s;
+            }
+        } else {
+            if (ma200SeriesRef.current) {
+                chart.removeSeries(ma200SeriesRef.current);
+                ma200SeriesRef.current = null;
+            }
+        }
+
+        // Volume histogram
+        if (activeIndicators.has("volume")) {
+            if (!volumeSeriesRef.current) {
+                const s = chart.addSeries(HistogramSeries, {
+                    priceFormat: { type: "volume" },
+                    priceScaleId: "volume",
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                });
+                s.priceScale().applyOptions({
+                    scaleMargins: { top: 0.8, bottom: 0 },
+                });
+                s.setData(toVolumeData(candles, accent));
+                volumeSeriesRef.current = s;
+            }
+        } else {
+            if (volumeSeriesRef.current) {
+                chart.removeSeries(volumeSeriesRef.current);
+                volumeSeriesRef.current = null;
+            }
+        }
+    }, [activeIndicators, candles, accent]);
 
     const latestPoint = candles[candles.length - 1];
     const summaryMeta = summary?.meta;
@@ -614,13 +811,70 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                     </div>
                 </div>
 
-                < div className="tek-chart-wrap" >
-                    <div className="tek-chart-ttl" >
-                        Candlestick chart {asset.ticker} · {CANDLES_INTERVAL} · data awal {candles.length}
+                <div className="tek-chart-wrap relative">
+                    {/* Header row: title + action buttons */}
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                        <div>
+                            <div className="tek-chart-ttl">
+                                Candlestick chart {asset.ticker} · {CANDLES_INTERVAL} · data awal {candles.length}
+                            </div>
+                            <div className="mt-0.5 text-[10px] text-grove-muted2">
+                                Scroll ke kiri untuk memuat histori candle yang lebih lama.
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            {/* Indikator dropdown */}
+                            <div className="relative" ref={indicatorMenuRef}>
+                                <button
+                                    onClick={() => setShowIndicatorMenu((v) => !v)}
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer transition-colors bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/70 hover:text-white/90"
+                                >
+                                    <BarChart2 size={11} />
+                                    Indikator
+                                    {activeIndicators.size > 0 && (
+                                        <span className="bg-white/20 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-semibold">
+                                            {activeIndicators.size}
+                                        </span>
+                                    )}
+                                    <ChevronDown size={10} className={`transition-transform duration-150 ${showIndicatorMenu ? "rotate-180" : ""}`} />
+                                </button>
+
+                                {showIndicatorMenu && (
+                                    <div className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-lg border border-white/10 bg-[#12191a] shadow-2xl overflow-hidden">
+                                        <div className="px-3 py-2 text-[10px] text-white/40 border-b border-white/8 uppercase tracking-wider">
+                                            Pilih indikator
+                                        </div>
+                                        {INDICATOR_OPTIONS.map((opt) => (
+                                            <button
+                                                key={opt.key}
+                                                onClick={() => toggleIndicator(opt.key)}
+                                                className="w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors cursor-pointer hover:bg-white/5"
+                                            >
+                                                <div>
+                                                    <div className="text-[12px] font-medium text-white/80">{opt.label}</div>
+                                                    <div className="text-[10px] text-white/40">{opt.description}</div>
+                                                </div>
+                                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${activeIndicators.has(opt.key) ? "bg-white/90 border-white/90" : "border-white/20"}`}>
+                                                    {activeIndicators.has(opt.key) && <Check size={9} className="text-black" strokeWidth={3} />}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Perluas button */}
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer transition-colors bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/70 hover:text-white/90"
+                            >
+                                <Maximize2 size={10} />
+                                Perluas
+                            </button>
+                        </div>
                     </div>
-                    < div className="mt-1 text-[10px] text-grove-muted2" >
-                        Scroll ke kiri untuk memuat histori candle yang lebih lama.
-                    </div>
+
                     <div
                         ref={chartContainerRef}
                         role="img"
@@ -629,6 +883,41 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                         style={{ height: "260px" }}
                     />
                 </div>
+
+                {/* Fullscreen modal */}
+                {isModalOpen && (
+                    <div
+                        onClick={() => setIsModalOpen(false)}
+                        className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+                    >
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-[1100px] rounded-xl border border-white/10 bg-[#12191a] overflow-hidden flex flex-col shadow-2xl"
+                        >
+                            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/8">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[13px] font-semibold text-white/80">
+                                        Candlestick chart {asset.ticker} · {CANDLES_INTERVAL}
+                                    </span>
+                                    <span className="text-[11px] text-white/40">
+                                        {candles.length} candle · data historis
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="flex items-center justify-center w-7 h-7 rounded-md cursor-pointer transition-colors bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/60 hover:text-white/90"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            <div
+                                ref={modalChartContainerRef}
+                                className="w-full"
+                                style={{ height: "520px" }}
+                            />
+                        </div>
+                    </div>
+                )}
 
                 < div className="tek-analysis-rows" >
                     {
