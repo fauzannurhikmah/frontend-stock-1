@@ -56,6 +56,7 @@ type CandlesResponse = {
 };
 
 type TechnicalSummaryResponse = {
+    marketCap?: string;
     company?: {
         legalName?: string;
         displayName?: string;
@@ -650,6 +651,7 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
     const latestPoint = candles[candles.length - 1];
     const summaryMeta = summary?.meta;
     const snapshot = summary?.overview?.snapshot;
+    const marketCap = summary?.marketCap;
     const indicators = summary?.overview?.indicators;
     const wyckoff = summary?.wyckoff;
     const wyckoffIndicators = summary?.wyckoffIndicators;
@@ -671,9 +673,6 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
         return recentCandles.reduce((sum, c) => sum + c.volume, 0) / recentCandles.length;
     }, [candles, wyckoffIndicators?.avgVolume30]);
     const chartDateLabel = summary?.wyckoffIndicators?.asOf ?? snapshot?.date ?? latestPoint?.time;
-    const signal = summary?.overview?.signal ?? "-";
-    const phase = wyckoff?.phase ?? "-";
-    const confidence = typeof wyckoff?.confidence === "number" ? `${Math.round(wyckoff.confidence * 100)}%` : "-";
     const notes = wyckoff?.notes ?? [];
     const rsiValue = Number.parseFloat(wyckoffIndicators?.rsi14 ?? indicators?.rsi14 ?? "");
     const rsiTone = Number.isNaN(rsiValue)
@@ -724,22 +723,21 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                         </div>
                     </div>
                     <div className="tek-ind">
-                        <div className="tek-ind-lbl">Signal</div>
-                        <div className="tek-ind-val" style={{ fontSize: "12px" }}>{signal}</div>
-                        <div className="tek-ind-sig" style={{ color: "var(--muted2)" }}>Wyckoff summary</div>
-                    </div>
-                    <div className="tek-ind">
-                        <div className="tek-ind-lbl">Phase</div>
-                        <div className="tek-ind-val" style={{ fontSize: "12px" }}>{phase}</div>
-                        <div className="tek-ind-sig" style={{ color: "var(--muted2)" }}>Confidence {confidence}</div>
+                        <div className="tek-ind-lbl">Market Cap</div>
+                        <div className="tek-ind-val" style={{ fontSize: "12px" }}>
+                            {formatCurrency(marketCap)}
+                        </div>
+                        <div className="tek-ind-sig" style={{ color: "var(--muted2)" }}>
+                            {chartDateLabel ? formatDateLabel(chartDateLabel) : "-"}
+                        </div>
                     </div>
                     <div className="tek-ind">
                         <div className="tek-ind-lbl">Volume</div>
                         <div className="tek-ind-val" style={{ fontSize: "12px" }}>
-                            {formatCurrency(latestVolume)}
+                            {formatNumber(latestVolume)}
                         </div>
                         <div className="tek-ind-sig" style={{ color: "var(--grove)" }}>
-                            Avg 30 hari {avgVolume ? `· ${formatCurrency(avgVolume)}` : ""}
+                            Avg 30 hari {avgVolume ? `· ${formatNumber(avgVolume)}` : ""}
                         </div>
                     </div>
                 </div>
@@ -767,15 +765,6 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                             {formatCurrency(wyckoffIndicators?.ma200 ?? indicators?.ma200)}
                         </div>
                         <div className="tek-ind-sig" style={{ color: "var(--muted2)" }}>Long Term Avg</div>
-                    </div>
-                    <div className="tek-ind">
-                        <div className="tek-ind-lbl">Volume / Hari</div>
-                        <div className="tek-ind-val" style={{ fontSize: "12px" }}>
-                            {formatCurrency(avgVolume ?? latestVolume)}
-                        </div>
-                        <div className="tek-ind-sig" style={{ color: "var(--grove)" }}>
-                            {loadingMore ? "Memuat data historis lebih lama..." : "Avg 30 hari"}
-                        </div>
                     </div>
                 </div>
 
