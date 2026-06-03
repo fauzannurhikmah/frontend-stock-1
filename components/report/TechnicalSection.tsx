@@ -18,6 +18,7 @@ import { API_BASE_URL } from "@/lib/env";
 import { COLOR_MAP } from "@/lib/research-utils";
 import { ResearchAsset } from "@/lib/types";
 import { ChartExpandModal } from "./Chartexpandmodal";
+import TestStockPrice from "./TestStockPrice";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,10 @@ type TechnicalSummaryResponse = {
         legalName?: string;
         displayName?: string;
     };
+    listing?: {
+        id?: string;
+        symbol?: string;
+    },
     meta?: {
         period?: {
             range?: string;
@@ -120,7 +125,7 @@ function formatNumber(value: string | number | null | undefined) {
     return new Intl.NumberFormat("id-ID").format(parsed);
 }
 
-function formatCurrency(value: string | number | null | undefined) {
+export function formatCurrency(value: string | number | null | undefined) {
     const formatted = formatNumber(value);
     return formatted === "-" ? formatted : `Rp ${formatted}`;
 }
@@ -657,6 +662,9 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
     const wyckoffIndicators = summary?.wyckoffIndicators;
     const companyName =
         summary?.company?.displayName?.trim() || summary?.company?.legalName?.trim() || asset.name;
+
+    const listingId = summary?.listing?.id
+
     const periodRange = summaryMeta?.period?.range ?? SUMMARY_RANGE;
     const periodInterval = summaryMeta?.period?.interval ?? SUMMARY_INTERVAL;
     const periodTo = summaryMeta?.period?.to
@@ -706,13 +714,17 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
     return (
         <section className="tek-wrap">
             <div className="tek-wyckoff">
-                <div className="tek-wyckoff-title">Analisis Wyckoff — {companyName}</div>
+
+                <TestStockPrice companyName={companyName} listingId={listingId} />
+
+
+                {/* <div className="tek-wyckoff-title">Analisis Wyckoff — {companyName}</div>
                 <div className="tek-wyckoff-sub">
                     Range {periodRange} · interval {periodInterval}
                     {periodTo ? ` · updated ${periodTo}` : ""}
-                </div>
+                </div> */}
 
-                <div className="tek-indicators">
+                {/* <div className="tek-indicators">
                     <div className="tek-ind">
                         <div className="tek-ind-lbl">Snapshot</div>
                         <div className="tek-ind-val" style={{ fontSize: "12px" }}>
@@ -740,9 +752,9 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                             Avg 30 hari {avgVolume ? `· ${formatNumber(avgVolume)}` : ""}
                         </div>
                     </div>
-                </div>
+                </div> */}
 
-                <div className="tek-indicators">
+                {/* <div className="tek-indicators">
                     <div className="tek-ind">
                         <div className="tek-ind-lbl">RSI(14)</div>
                         <div className="tek-ind-val" style={{ color: rsiTone }}>
@@ -766,11 +778,10 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                         </div>
                         <div className="tek-ind-sig" style={{ color: "var(--muted2)" }}>Long Term Avg</div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* ── Chart section ──────────────────────────────────────────── */}
-                <div className="tek-chart-wrap relative">
-                    {/* Header row */}
+                {/* <div className="tek-chart-wrap relative">
                     <div className="flex items-start justify-between gap-3 mb-1">
                         <div>
                             <div className="tek-chart-ttl">
@@ -782,7 +793,6 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                            {/* Indicator dropdown */}
                             <div className="relative" ref={indicatorMenuRef}>
                                 <button
                                     onClick={() => setShowIndicatorMenu((v) => !v)}
@@ -832,7 +842,6 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                                 )}
                             </div>
 
-                            {/* Expand button */}
                             <button
                                 onClick={() => setIsModalOpen(true)}
                                 className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer transition-colors bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/70 hover:text-white/90"
@@ -843,7 +852,6 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                         </div>
                     </div>
 
-                    {/* Chart canvas + OHLCV overlay */}
                     <div className="relative mt-3">
                         <OHLCVTooltip data={hoveredOHLCV} accent={accent} />
                         <div
@@ -854,9 +862,9 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                             style={{ height: "260px" }}
                         />
                     </div>
-                </div>
+                </div> */}
 
-                <div className="tek-analysis-rows">
+                {/* <div className="tek-analysis-rows">
                     {notes.length ? (
                         notes.map((item) => (
                             <div key={item} className="tek-row">
@@ -872,14 +880,14 @@ export function TechnicalSection({ asset }: { asset: ResearchAsset }) {
                             </div>
                         </div>
                     )}
-                </div>
+                </div> */}
             </div>
 
-            <div className="disc">
+            {/* <div className="disc">
                 Analisis teknikal ini ditarik dari endpoint candles dan technical-summary. Bukan
                 merupakan sinyal trading; gunakan bersama konteks fundamental dan risk management
                 yang memadai.
-            </div>
+            </div> */}
 
             {/* ── Fullscreen modal (separate component) ──────────────────────── */}
             <ChartExpandModal
