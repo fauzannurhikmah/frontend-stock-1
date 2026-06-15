@@ -11,7 +11,7 @@ interface StockPrice {
     volume: string;
 }
 
-const TestStockPrice = ({ companyName, listingId }: { companyName: string; listingId: string }) => {
+const TestStockPrice = ({ companyName, listingId }: { companyName: string; listingId?: string }) => {
     const [date, setDate] = useState("2026-05-29");
     const [price, setPrice] = useState<StockPrice | null>(null);
     const [noData, setNoData] = useState(false);
