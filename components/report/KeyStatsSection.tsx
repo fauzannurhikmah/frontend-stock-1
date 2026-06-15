@@ -5,6 +5,7 @@ import Chart from "chart.js/auto";
 import { API_BASE_URL } from "@/lib/env";
 import { ResearchAsset } from "@/lib/types";
 import { getReportFinancials, KsRow } from "@/data/reportFinancials";
+import KeyStats from "../research/test/KeyStats";
 
 type MetricId = "netIncome" | "eps" | "revenue";
 
@@ -498,10 +499,10 @@ export function KeyStatsSection({ asset }: { asset: ResearchAsset }) {
 
     if (summaryLoading || (metricLoading && !currentMetricData)) {
       return (
-        <div className= "placeholder" >
-        <h3>Memuat key statistics </h3>
+        <div className="placeholder" >
+          <h3>Memuat key statistics </h3>
           <p>
-            Ringkasan valuasi dan data kuartalan untuk { asset.ticker } sedang
+            Ringkasan valuasi dan data kuartalan untuk {asset.ticker} sedang
             diambil dari API.
           </p>
         </div>
@@ -510,11 +511,11 @@ export function KeyStatsSection({ asset }: { asset: ResearchAsset }) {
 
     if (summaryError || metricError || !summary || !currentMetricData) {
       return (
-        <div className= "placeholder" >
-        <h3>Data key statistics belum tersedia </h3>
+        <div className="placeholder" >
+          <h3>Data key statistics belum tersedia </h3>
           <p>
-      { summaryError || metricError || `Key statistics untuk ${asset.ticker} sedang disiapkan.` }
-      </p>
+            {summaryError || metricError || `Key statistics untuk ${asset.ticker} sedang disiapkan.`}
+          </p>
         </div>
       );
     }
@@ -538,270 +539,272 @@ export function KeyStatsSection({ asset }: { asset: ResearchAsset }) {
       : "-";
 
     return (
-      <section className= "analysis-wrap" >
-      <div className="slbl" style = {{ marginTop: 0 }
-  }>
-    Ringkasan Valuasi
-      </div>
-      < div className = "ks-extra" >
-        <div className="ks-ext-item" >
-          <div className="ks-ext-lbl" > Market Cap </div>
-            < div className = "ks-ext-val" > { marketCap } </div>
-              </div>
-              < div className = "ks-ext-item" >
-                <div className="ks-ext-lbl" > Enterprise Value </div>
-                  < div className = "ks-ext-val" > { enterpriseValue } </div>
-                    </div>
-                    < div className = "ks-ext-item" >
-                      <div className="ks-ext-lbl" > Shares Outstanding </div>
-                        < div className = "ks-ext-val" > { sharesOutstanding } </div>
-                          </div>
-                          < div className = "ks-ext-item" >
-                            <div className="ks-ext-lbl" > Free Float </div>
-                              < div className = "ks-ext-val" > { freeFloatPct } </div>
-                                </div>
-                                </div>
 
-                                < div className = "ks-extra" style = {{ marginTop: "-4px" }
-}>
-  <div className="ks-ext-item" >
-    <div className="ks-ext-lbl" > PE(TTM) </div>
-      < div className = "ks-ext-val" > { peTtm } </div>
-        </div>
-        < div className = "ks-ext-item" >
-          <div className="ks-ext-lbl" > Div TTM </div>
-            < div className = "ks-ext-val" > { divTtm } </div>
-              </div>
-              < div className = "ks-ext-item" >
-                <div className="ks-ext-lbl" > Payout Ratio </div>
-                  < div className = "ks-ext-val" > { payoutRatio } </div>
-                    </div>
-                    < div className = "ks-ext-item" >
-                      <div className="ks-ext-lbl" > Div Yield </div>
-                        < div className = "ks-ext-val" > { divYield } </div>
-                          </div>
-                          </div>
+      <KeyStats symbol={asset.ticker} />
+      // <section className="analysis-wrap" >
+      //   <div className="slbl" style={{ marginTop: 0 }
+      //   }>
+      //     Ringkasan Valuasi
+      //   </div>
+      //   < div className="ks-extra" >
+      //     <div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Market Cap </div>
+      //       < div className="ks-ext-val" > {marketCap} </div>
+      //     </div>
+      //     < div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Enterprise Value </div>
+      //       < div className="ks-ext-val" > {enterpriseValue} </div>
+      //     </div>
+      //     < div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Shares Outstanding </div>
+      //       < div className="ks-ext-val" > {sharesOutstanding} </div>
+      //     </div>
+      //     < div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Free Float </div>
+      //       < div className="ks-ext-val" > {freeFloatPct} </div>
+      //     </div>
+      //   </div>
 
-                          < div className = "slbl" > Data Per Kuartal & amp; Proyeksi </div>
-                            < div className = "ks-metric-tabs" >
-                              {(Object.keys(labelSet) as MetricId[]).map((metricId) => (
-                                <button
-              key= { metricId }
-              className = {`ks-mtab ${activeMetric === metricId ? "active" : ""}`}
-                                onClick = {() => setActiveMetric(metricId)}
-                                type = "button"
-                                >
-                                { labelSet[metricId]}
-                                </button>
-                              ))}
-</div>
+      //   < div className="ks-extra" style={{ marginTop: "-4px" }
+      //   }>
+      //     <div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > PE(TTM) </div>
+      //       < div className="ks-ext-val" > {peTtm} </div>
+      //     </div>
+      //     < div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Div TTM </div>
+      //       < div className="ks-ext-val" > {divTtm} </div>
+      //     </div>
+      //     < div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Payout Ratio </div>
+      //       < div className="ks-ext-val" > {payoutRatio} </div>
+      //     </div>
+      //     < div className="ks-ext-item" >
+      //       <div className="ks-ext-lbl" > Div Yield </div>
+      //       < div className="ks-ext-val" > {divYield} </div>
+      //     </div>
+      //   </div>
 
-  < div className = "ks-chart-box" >
-    <div className="ks-chart-ttl" > { title } </div>
-      < div className = "chart-h" >
-        <canvas ref={ canvasRef } />
-          </div>
-          </div>
+      //   < div className="slbl" > Data Per Kuartal & amp; Proyeksi </div>
+      //   < div className="ks-metric-tabs" >
+      //     {(Object.keys(labelSet) as MetricId[]).map((metricId) => (
+      //       <button
+      //         key={metricId}
+      //         className={`ks-mtab ${activeMetric === metricId ? "active" : ""}`}
+      //         onClick={() => setActiveMetric(metricId)}
+      //         type="button"
+      //       >
+      //         {labelSet[metricId]}
+      //       </button>
+      //     ))}
+      //   </div>
 
-          < div className = "ks-tbl-wrap" >
-            <div className="ks-row hdr" >
-              <span>Periode </span>
-              < span style = {{ textAlign: "right" }}> { valHdr } </span>
-                < span style = {{ textAlign: "right" }}> { grHdr } </span>
-                  </div>
-{
-  currentMetricData.table.map((row) => (
-    <div
-              key= {`${row.period}-${row.value}`}
-className = {`ks-row ${row.isForecast ? "fc-row" : ""}`}
-            >
-  <span className="ks-period" >
-    {
-      row.isForecast ? (
-        <>
-        { row.period } < span className="fc-asterisk" >* </span>
-        </>
-                ) : (
-          row.period
-        )}
-</span>
-  < span className = "ks-val" > { row.value } </span>
-    < span className = {`ks-grow ${row.growthYoY !== "-" ? "pos" : ""}`}>
-      { row.growthYoY }
-      </span>
-      </div>
-          ))}
-<div className="ks-divider" >
-  <span>TTM Summary </span>
-    </div>
-    < div className = "ks-row bold" >
-      <span className="ks-period" > TTM </span>
-        < span className = "ks-val" > { ttmValue } </span>
-          < span className = "ks-grow pos" > { ttmGrowth } </span>
-            </div>
-            </div>
+      //   < div className="ks-chart-box" >
+      //     <div className="ks-chart-ttl" > {title} </div>
+      //     < div className="chart-h" >
+      //       <canvas ref={canvasRef} />
+      //     </div>
+      //   </div>
 
-            < div className = "fc-legend" >
-              <span className="fc-legend-mark" >* </span> Data kuartalan dan proyeksi
-          diambil langsung dari endpoint key - statistics.
-        </div>
-  </section>
+      //   < div className="ks-tbl-wrap" >
+      //     <div className="ks-row hdr" >
+      //       <span>Periode </span>
+      //       < span style={{ textAlign: "right" }}> {valHdr} </span>
+      //       < span style={{ textAlign: "right" }}> {grHdr} </span>
+      //     </div>
+      //     {
+      //       currentMetricData.table.map((row) => (
+      //         <div
+      //           key={`${row.period}-${row.value}`}
+      //           className={`ks-row ${row.isForecast ? "fc-row" : ""}`}
+      //         >
+      //           <span className="ks-period" >
+      //             {
+      //               row.isForecast ? (
+      //                 <>
+      //                   {row.period} < span className="fc-asterisk" >* </span>
+      //                 </>
+      //               ) : (
+      //                 row.period
+      //               )}
+      //           </span>
+      //           < span className="ks-val" > {row.value} </span>
+      //           < span className={`ks-grow ${row.growthYoY !== "-" ? "pos" : ""}`}>
+      //             {row.growthYoY}
+      //           </span>
+      //         </div>
+      //       ))}
+      //     <div className="ks-divider" >
+      //       <span>TTM Summary </span>
+      //     </div>
+      //     < div className="ks-row bold" >
+      //       <span className="ks-period" > TTM </span>
+      //       < span className="ks-val" > {ttmValue} </span>
+      //       < span className="ks-grow pos" > {ttmGrowth} </span>
+      //     </div>
+      //   </div>
+
+      //   < div className="fc-legend" >
+      //     <span className="fc-legend-mark" >* </span> Data kuartalan dan proyeksi
+      //     diambil langsung dari endpoint key - statistics.
+      //   </div>
+      // </section>
     );
   }
 
-if (!ks) {
-  return (
-    <div className= "placeholder" >
-    <h3>Data segera tersedia </h3>
-      <p>
-          Grove sedang menyiapkan riset mendalam untuk { asset.ticker }.Sementara
-  itu, bagian Analisis & amp; Penilaian sudah lengkap.
+  if (!ks) {
+    return (
+      <div className="placeholder" >
+        <h3>Data segera tersedia </h3>
+        <p>
+          Grove sedang menyiapkan riset mendalam untuk {asset.ticker}.Sementara
+          itu, bagian Analisis & amp; Penilaian sudah lengkap.
         </p>
-    </div>
+      </div>
     );
-}
+  }
 
-const title = `${labelSet[activeMetric]} — Trend Kuartalan & Proyeksi`;
-const valHdr =
-  asset.assetClass === "bonds" || asset.assetClass === "mmf"
-    ? "Nilai"
-    : "Nilai (IDR)";
-const grHdr =
-  asset.assetClass === "bonds" || asset.assetClass === "mmf"
-    ? "Perubahan"
-    : "Growth YoY";
+  const title = `${labelSet[activeMetric]} — Trend Kuartalan & Proyeksi`;
+  const valHdr =
+    asset.assetClass === "bonds" || asset.assetClass === "mmf"
+      ? "Nilai"
+      : "Nilai (IDR)";
+  const grHdr =
+    asset.assetClass === "bonds" || asset.assetClass === "mmf"
+      ? "Perubahan"
+      : "Growth YoY";
 
-return (
-  <section className= "analysis-wrap" >
-  <div className="slbl" style = {{ marginTop: 0 }}>
-    Ringkasan
-{
-  asset.assetClass === "bonds"
-    ? " Instrumen"
-    : asset.assetClass === "mmf"
-      ? " Produk"
-      : " Valuasi"
-}
-</div>
-  < div className = "ks-extra" >
-    <div className="ks-ext-item" >
-      <div className="ks-ext-lbl" > { extraLabels.mktCap } </div>
-        < div className = "ks-ext-val" > { ks.extra.mktCap } </div>
-          </div>
-          < div className = "ks-ext-item" >
-            <div className="ks-ext-lbl" > { extraLabels.ev } </div>
-              < div className = "ks-ext-val" > { ks.extra.ev } </div>
-                </div>
-                < div className = "ks-ext-item" >
-                  <div className="ks-ext-lbl" > { extraLabels.shares } </div>
-                    < div className = "ks-ext-val" > { ks.extra.shares } </div>
-                      </div>
-                      < div className = "ks-ext-item" >
-                        <div className="ks-ext-lbl" > { extraLabels.ff } </div>
-                          < div className = "ks-ext-val" > { ks.extra.ff } </div>
-                            </div>
-                            </div>
-
-{
-  showPE && (ks.extra.peTTM || ks.extra.pe26) ? (
-    <div className= "ks-extra" style = {{ marginTop: "-4px" }
-}>
-  <div className="ks-ext-item" >
-    <div className="ks-ext-lbl" > PE(TTM) </div>
-      < div className = "ks-ext-val" > { ks.extra.peTTM ?? "-" } </div>
+  return (
+    <section className="analysis-wrap" >
+      <div className="slbl" style={{ marginTop: 0 }}>
+        Ringkasan
+        {
+          asset.assetClass === "bonds"
+            ? " Instrumen"
+            : asset.assetClass === "mmf"
+              ? " Produk"
+              : " Valuasi"
+        }
+      </div>
+      < div className="ks-extra" >
+        <div className="ks-ext-item" >
+          <div className="ks-ext-lbl" > {extraLabels.mktCap} </div>
+          < div className="ks-ext-val" > {ks.extra.mktCap} </div>
         </div>
-        < div className = "ks-ext-item" >
-          <div className="ks-ext-lbl" >
-            PE FY 2026E < span className = "fc-asterisk" >* </span>
+        < div className="ks-ext-item" >
+          <div className="ks-ext-lbl" > {extraLabels.ev} </div>
+          < div className="ks-ext-val" > {ks.extra.ev} </div>
+        </div>
+        < div className="ks-ext-item" >
+          <div className="ks-ext-lbl" > {extraLabels.shares} </div>
+          < div className="ks-ext-val" > {ks.extra.shares} </div>
+        </div>
+        < div className="ks-ext-item" >
+          <div className="ks-ext-lbl" > {extraLabels.ff} </div>
+          < div className="ks-ext-val" > {ks.extra.ff} </div>
+        </div>
+      </div>
+
+      {
+        showPE && (ks.extra.peTTM || ks.extra.pe26) ? (
+          <div className="ks-extra" style={{ marginTop: "-4px" }
+          }>
+            <div className="ks-ext-item" >
+              <div className="ks-ext-lbl" > PE(TTM) </div>
+              < div className="ks-ext-val" > {ks.extra.peTTM ?? "-"} </div>
+            </div>
+            < div className="ks-ext-item" >
+              <div className="ks-ext-lbl" >
+                PE FY 2026E < span className="fc-asterisk" >* </span>
               </div>
-              < div className = "ks-ext-val" style = {{ color: "var(--grove)" }}>
-                { ks.extra.pe26 ?? "-" }
-                </div>
-                </div>
-                < div className = "ks-ext-item" >
-                  <div className="ks-ext-lbl" > PE Avg 5Y(Ref) </div>
-                    < div className = "ks-ext-val" > -</div>
-                      </div>
-                      < div className = "ks-ext-item" >
-                        <div className="ks-ext-lbl" > Posisi vs Avg </div>
-                          < div
-className = "ks-ext-val"
-style = {{ color: "var(--muted2)", fontSize: "13px" }}
-            >
-  Reference
-  </div>
-  </div>
-  </div>
-      ) : null}
-
-<div className="slbl" > Data Per Kuartal & amp; Proyeksi </div>
-  < div className = "ks-metric-tabs" >
-    {(Object.keys(labelSet) as MetricId[]).map((metricId) => (
-      <button
-            key= { metricId }
-            className = {`ks-mtab ${activeMetric === metricId ? "active" : ""}`}
-      onClick = {() => setActiveMetric(metricId)}
-      type = "button"
-      >
-      { labelSet[metricId]}
-      </button>
-    ))}
-</div>
-  < div className = "ks-chart-box" >
-    <div className="ks-chart-ttl" > { title } </div>
-      < div className = "chart-h" >
-        <canvas ref={ canvasRef } />
-          </div>
-          </div>
-          < div className = "ks-tbl-wrap" >
-            <div className="ks-row hdr" >
-              <span>Periode </span>
-              < span style = {{ textAlign: "right" }}> { valHdr } </span>
-                < span style = {{ textAlign: "right" }}> { grHdr } </span>
-                  </div>
-{
-  activeRows.map((row) => {
-    if (row.p === "divider") {
-      return (
-        <div key= {`div-${row.label}`
-    } className = "ks-divider" >
-      <span>{ row.label } </span>
-      </div>
-            );
-}
-
-const forecast = isForecast(row);
-return (
-  <div
-              key= {`${row.p}-${row.v}`}
-className = {`ks-row ${row.bold ? "bold" : ""} ${forecast ? "fc-row" : ""
-  }`}
-            >
-  <span className="ks-period" >
-  {
-    forecast?(
-                  <>
-    { row.p } < span className = "fc-asterisk" >* </span>
-      </>
-                ) : (
-  row.p
-)}
-</span>
-  < span className = "ks-val" > { row.v ?? "-" } </span>
-    < span
-className = {`ks-grow ${row.g ? (row.pos ? "pos" : "neg") : ""}`}
+              < div className="ks-ext-val" style={{ color: "var(--grove)" }}>
+                {ks.extra.pe26 ?? "-"}
+              </div>
+            </div>
+            < div className="ks-ext-item" >
+              <div className="ks-ext-lbl" > PE Avg 5Y(Ref) </div>
+              < div className="ks-ext-val" > -</div>
+            </div>
+            < div className="ks-ext-item" >
+              <div className="ks-ext-lbl" > Posisi vs Avg </div>
+              < div
+                className="ks-ext-val"
+                style={{ color: "var(--muted2)", fontSize: "13px" }}
               >
-  { row.g ?? "-" }
-  </span>
-  </div>
-          );
-        })}
-</div>
-  < div className = "fc-legend" >
-    <span className="fc-legend-mark" >* </span> Proyeksi FY 2026E adalah
-        estimasi internal tim riset Grove berdasarkan tren kuartalan, konsensus
-pasar, dan asumsi makro yang dapat berubah sewaktu - waktu.
+                Reference
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+      <div className="slbl" > Data Per Kuartal & amp; Proyeksi </div>
+      < div className="ks-metric-tabs" >
+        {(Object.keys(labelSet) as MetricId[]).map((metricId) => (
+          <button
+            key={metricId}
+            className={`ks-mtab ${activeMetric === metricId ? "active" : ""}`}
+            onClick={() => setActiveMetric(metricId)}
+            type="button"
+          >
+            {labelSet[metricId]}
+          </button>
+        ))}
       </div>
-  </section>
+      < div className="ks-chart-box" >
+        <div className="ks-chart-ttl" > {title} </div>
+        < div className="chart-h" >
+          <canvas ref={canvasRef} />
+        </div>
+      </div>
+      < div className="ks-tbl-wrap" >
+        <div className="ks-row hdr" >
+          <span>Periode </span>
+          < span style={{ textAlign: "right" }}> {valHdr} </span>
+          < span style={{ textAlign: "right" }}> {grHdr} </span>
+        </div>
+        {
+          activeRows.map((row) => {
+            if (row.p === "divider") {
+              return (
+                <div key={`div-${row.label}`
+                } className="ks-divider" >
+                  <span>{row.label} </span>
+                </div>
+              );
+            }
+
+            const forecast = isForecast(row);
+            return (
+              <div
+                key={`${row.p}-${row.v}`}
+                className={`ks-row ${row.bold ? "bold" : ""} ${forecast ? "fc-row" : ""
+                  }`}
+              >
+                <span className="ks-period" >
+                  {
+                    forecast ? (
+                      <>
+                        {row.p} < span className="fc-asterisk" >* </span>
+                      </>
+                    ) : (
+                      row.p
+                    )}
+                </span>
+                < span className="ks-val" > {row.v ?? "-"} </span>
+                < span
+                  className={`ks-grow ${row.g ? (row.pos ? "pos" : "neg") : ""}`}
+                >
+                  {row.g ?? "-"}
+                </span>
+              </div>
+            );
+          })}
+      </div>
+      < div className="fc-legend" >
+        <span className="fc-legend-mark" >* </span> Proyeksi FY 2026E adalah
+        estimasi internal tim riset Grove berdasarkan tren kuartalan, konsensus
+        pasar, dan asumsi makro yang dapat berubah sewaktu - waktu.
+      </div>
+    </section>
   );
 }
