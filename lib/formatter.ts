@@ -1,4 +1,4 @@
-export const formatAbbreviated = (value) => {
+export const formatAbbreviated = (value: string) => {
     if (!value || parseFloat(value) === 0) return '-';
 
     const parsed = parseFloat(value);
